@@ -128,11 +128,11 @@ if __name__ =='__main__':
     parser.add_argument('--input_path', type=str)
     parser.add_argument('--train_size', type=float, default=.85)
     parser.add_argument('--adam_epsilon', type=float, default=1e-8)
-    parser.add_argument('--epochs', type=int, int=2)
+    parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=5e-5)
     parser.add_argument('--weight_decay', type=float, default=0.0)
     parser.add_argument('--max_data_rows', type=int, default=None)
-    parser.add_argument('--max_sequence_length', type=int, int=128)
+    parser.add_argument('--max_sequence_length', type=int, default=128)
     parser.add_argument('--model_name', type=str, default='distilbert-base-uncased')
     parser.add_argument('--train_batch_size', type=int, default=16)
     parser.add_argument('--valid_batch_size', type=int, default=128)
@@ -142,7 +142,6 @@ if __name__ =='__main__':
     parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR']) # output_path arg from train_model.py.
     parser.add_argument('--num_cpus', type=int, default=os.environ['SM_NUM_CPUS'])
     parser.add_argument('--num_gpus', type=int, default=os.environ['SM_NUM_GPUS'])
-
+    # Parse command-line args and run main.
     args = parser.parse_args()
-    print(args)
     main(args)
