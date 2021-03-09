@@ -110,12 +110,11 @@ def main(args):
     # Train the model.
     trainer.train()
     trainer.evaluate()
-    # Save the model.
+    # Save the model to the output_path defined in train_model.py.
     device = torch.device("cuda")
     dummy_row = train_dataset[0]
     dummy_input = (
         dummy_row["input_ids"].unsqueeze(0).to(device),
-        # dummy_row["token_type_ids"].unsqueeze(0).to(device),
         dummy_row["attention_mask"].unsqueeze(0).to(device)
     )
     traced_model = torch.jit.trace(model, dummy_input)

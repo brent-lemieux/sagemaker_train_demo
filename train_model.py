@@ -1,30 +1,27 @@
 """Launch SageMaker training job from local."""
 from datetime import datetime
+from sagemaker.pytorch.estimator import PyTorch
+import os
 import boto3
 import pandas as pd
 import sagemaker
-from sagemaker.pytorch.estimator import PyTorch
 
 # Define AWS sessions.
 sagemaker_session = sagemaker.Session()
-
 # Define role arn with SageMaker and S3 access.
-role = "arn:aws:iam::484039584206:role/aws_sagemaker_full"
-
+role = f"arn:aws:iam::{os.environ['AWS_ACCOUNT_NUMBER']}:role/SageMakerFullAccess"
 # Define S3 variables for data and model storage.
 bucket = "brent-sage-dev"
 model_prefix = "sagemaker/amazon_review_classifier/train"
-
 input_path = f"s3://{bucket}/{model_prefix}/input_data"
 output_path = f"s3://{bucket}/{model_prefix}/model"
 code_path = f"s3://{bucket}/{model_prefix}/src"
-
-# # Upload data to S3.
-# sagemaker_session.upload_data(
-#     path="./data/amazon_book_reviews.json",
-#     bucket=bucket,
-#     key_prefix=f"{model_prefix}/input_data"
-# )
+# Upload data to S3.
+sagemaker_session.upload_data(
+    path="./data/small_book_reviews.json",
+    bucket=bucket,
+    key_prefix=f"{model_prefix}/input_data"
+)
 # Define hyperparameters.
 hyperparameters = {
     "input_path": input_path,
@@ -35,15 +32,13 @@ hyperparameters = {
     "learning_rate": 5e-5,
     "weight_decay": .01,
     "warmup_steps": 500,
-    "max_sequence_length": 128,
-    "max_data_rows": 50000 # Increase this to boost model performance.
+    "max_sequence_length": 128
 }
-# Create and train model
+# Create SageMaker estimator and laucn training job.
 pytorch_estimator = PyTorch(
     entry_point='model.py',
     source_dir='/Users/brent/projects/sagemaker_train_demo/src',
     instance_type='ml.p2.xlarge',
-    # instance_type='ml.c5.xlarge',
     instance_count=1,
     framework_version='1.5.0',
     py_version='py3',
