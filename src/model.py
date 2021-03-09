@@ -11,7 +11,7 @@ from sklearn.metrics import precision_score, recall_score, average_precision_sco
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset, DataLoader, RandomSampler
-from transformers import AdamW, AutoModelForSequenceClassification, AutoTokenizer, Trainer
+from transformers import AdamW, AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
 from utils import read_object
 
@@ -31,14 +31,19 @@ class AmazonReviewDataset(Dataset):
 
     def __getitem__(self, index):
         """Returns the model inputs at the specified index."""
-        inputs = self.tokenizer.batch_encode_plus(
-            self.data["input"].iloc[index],
+        text_input = self.data["input"].iloc[index]
+        input_dict = self.tokenizer.encode_plus(
+            text_input,
             max_length=args.max_sequence_length,
             padding="max_length",
             truncation=True,
-            returns_tensors="pt"
+            return_tensors="pt"
         )
-        inputs["labels"] = torch.tensor(self.data["label"].iloc[index])
+        inputs = {
+            "input_ids": input_dict["input_ids"][0],
+            "attention_mask": input_dict["attention_mask"][0],
+            "labels": torch.tensor(self.data["label"].iloc[index], dtype=torch.long)
+        }
         return inputs
 
     def __len__(self):
@@ -53,6 +58,8 @@ def preprocess_data(df):
     df["label"] = df["star_rating"].map(star_map)
     # Concatenate the review headline with the body for model input.
     df["input"] = df["review_headline"] + " " + df["review_body"]
+    # Drop nans.
+    df = df.loc[df["input"].notnull()].copy()
     # Split data into train and valid.
     traindf, validdf = train_test_split(df[["input", "label"]])
     return traindf, validdf
@@ -84,8 +91,13 @@ def main(args):
     # Create data set for model input.
     train_dataset = AmazonReviewDataset(traindf, args.model_name, args.max_sequence_length)
     valid_dataset = AmazonReviewDataset(validdf, args.model_name, args.max_sequence_length)
+    print(train_dataset[0])
     # Define model and trainer.
-    model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        args.model_name,
+        num_labels=2,
+        torchscript=True
+    )
     training_args = TrainingArguments(
         output_dir=os.path.join(args.model_dir, "results"),
         num_train_epochs=args.epochs,
@@ -97,7 +109,6 @@ def main(args):
         weight_decay=args.weight_decay,
         logging_dir=os.path.join(args.model_dir, "logs"),
         logging_steps=10,
-        eval_steps=10,
         evaluation_strategy="steps",
         load_best_model_at_end=True
     )

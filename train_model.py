@@ -32,7 +32,6 @@ hyperparameters = {
     "epochs": 2,
     "learning_rate": 5e-5,
     "weight_decay": .01,
-    "warmup_steps": 500,
     "max_sequence_length": 128
 }
 # Create SageMaker estimator and laucn training job.
