@@ -54,7 +54,7 @@ def preprocess_data(df):
     # Concatenate the review headline with the body for model input.
     df["input"] = df["review_headline"] + " " + df["review_body"]
     # Split data into train and valid.
-    traindf, validdf = train_test_split(df["input", "label"])
+    traindf, validdf = train_test_split(df[["input", "label"]])
     return traindf, validdf
 
 
@@ -87,7 +87,7 @@ def main(args):
     # Define model and trainer.
     model = AutoModelForSequenceClassification.from_pretrained(args.model_name)
     training_args = TrainingArguments(
-        output_dir="/opt/ml/output/results",
+        output_dir=os.path.join(args.model_dir, "results"),
         num_train_epochs=args.epochs,
         per_device_train_batch_size=args.train_batch_size,
         per_device_eval_batch_size=args.valid_batch_size,
@@ -95,8 +95,9 @@ def main(args):
         adam_epsilon=args.adam_epsilon,
         warmup_steps=500,
         weight_decay=args.weight_decay,
-        logging_dir="/opt/ml/output/logs",
+        logging_dir=os.path.join(args.model_dir, "logs"),
         logging_steps=10,
+        eval_steps=10,
         evaluation_strategy="steps",
         load_best_model_at_end=True
     )
@@ -121,7 +122,7 @@ def main(args):
     torch.jit.save(traced_model, os.path.join(args.model_dir, "model.pth"))
 
 
-if __name__ =='--main--':
+if __name__ =='__main__':
     parser = argparse.ArgumentParser()
     # Hyperparameters from launch_training_job.py get passed in as command line args.
     parser.add_argument('--input_path', type=str)
@@ -138,7 +139,7 @@ if __name__ =='--main--':
     # SageMaker environment variables.
     parser.add_argument('--hosts', type=list, default=os.environ['SM_HOSTS'])
     parser.add_argument('--current_host', type=str, default=os.environ['SM_CURRENT_HOST'])
-    parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR'])
+    parser.add_argument('--model_dir', type=str, default=os.environ['SM_MODEL_DIR']) # output_path arg from train_model.py.
     parser.add_argument('--num_cpus', type=int, default=os.environ['SM_NUM_CPUS'])
     parser.add_argument('--num_gpus', type=int, default=os.environ['SM_NUM_GPUS'])
 
